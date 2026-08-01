@@ -46,7 +46,8 @@ separate showcase mode.
   travels from the center through the three rings and settles back into the
   breathing center LED.
 - **Encounter pop:** a newly encountered color briefly pulses across its RSSI
-  ring and then remains at its assigned near, middle, or far position.
+  ring and then remains at its assigned near, middle, or far position. Later
+  RSSI distance changes move the color between rings without replaying the pop.
 - **Palette orbit:** when the Web App reads the encounter histogram, the stored
   encounter colors orbit around NeoHEX before returning to their normal
   proximity positions.

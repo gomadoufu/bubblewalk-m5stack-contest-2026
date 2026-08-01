@@ -263,8 +263,10 @@ EncounterDisplayUpdate NeohexDisplay::observeEncounter(
             storedCount_, overflow_, level};
   }
   if (existingPixel >= 0) clearSlot(static_cast<uint8_t>(existingPixel));
-  return placeEncounter(color, nodeId, sequence, level, seenAtMillis, animate,
-                        slotMissing, levelChanged, seenAtMillis);
+  const bool animatePlacement = animate && (forcePlacement || slotMissing);
+  return placeEncounter(color, nodeId, sequence, level, seenAtMillis,
+                        animatePlacement, slotMissing, levelChanged,
+                        seenAtMillis);
 }
 
 EncounterDisplayUpdate NeohexDisplay::restoreEncounter(
