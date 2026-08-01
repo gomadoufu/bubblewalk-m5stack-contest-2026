@@ -6,6 +6,7 @@ import { LocalOpinionStore } from './data/local-opinion-store';
 import { listTopics } from './data/fixed-topic-repository';
 import { mixColor } from './domain/color-mixer';
 import type { EncounterSampleLog } from './domain/encounter-samples';
+import { gravityPointsForSamples } from './domain/encounter-gravity';
 import type { Histogram } from './domain/histogram';
 import { decideHistogramPrivacy } from './domain/privacy-policy';
 import type { RgbColor } from './domain/rgb-color';
@@ -249,9 +250,15 @@ export class ShowcaseApp {
       result = `<div class="result-message"><span>✦</span><h3>${escapeHtml(copy.beginningTitle)}</h3><p>${escapeHtml(copy.remainingColors(remaining))}</p></div>`;
     } else {
       result = `
-        <div class="encounter-cloud" aria-label="${escapeHtml(copy.encounteredAria)}">
+        <div id="encounter-gravity" class="encounter-gravity" aria-label="${escapeHtml(copy.encounteredAria)}" style="--opinion-color: ${rgbToHex(ownColor)}">
+          <div class="gravity-atmosphere" aria-hidden="true"></div>
+          <i class="gravity-orbit gravity-orbit-near" aria-hidden="true"></i>
+          <i class="gravity-orbit gravity-orbit-middle" aria-hidden="true"></i>
+          <i class="gravity-orbit gravity-orbit-far" aria-hidden="true"></i>
           ${this.renderEncounterBubbles(this.histogram, this.encounterSamples)}
-          <div class="encounter-you" style="--opinion-color: ${rgbToHex(ownColor)}"><span>${escapeHtml(copy.you)}</span></div>
+          <button id="encounter-you" class="encounter-you" type="button" aria-label="${escapeHtml(copy.you)}"><span>${escapeHtml(copy.you)}</span></button>
+          <div class="gravity-ripple-layer" aria-hidden="true"></div>
+          <p class="gravity-hint">${escapeHtml(copy.gravityHint)}</p>
         </div>
         <div class="result-message compact"><span>✦</span><h3>${escapeHtml(copy.foundTitle)}</h3><p>${escapeHtml(copy.foundBody)}</p></div>
       `;
@@ -284,14 +291,20 @@ export class ShowcaseApp {
       encounterSamples.topicVersion === this.topic.topicVersion &&
       encounterSamples.samples.length > 0
     ) {
-      encounterSamples.samples.slice(-limit).forEach((sample, index) => {
+      gravityPointsForSamples(encounterSamples.samples.slice(-limit)).forEach((point, index) => {
+        const sample = point.sample;
         const weights = sample.triangleX === undefined || sample.triangleY === undefined
           ? triangleWeightsForOpinion(this.topic, sample.opinionValue)
           : triangleSelectionFromPoint(this.topic, sample.triangleX / 255, sample.triangleY / 255).weights;
         const color = rgbToHex(triangleColorForWeights(this.topic, weights));
-        const size = 42 + ((sample.nodeId * 17 + index * 11) % 36);
         const delay = (index % 8) * 0.08;
-        bubbles.push(`<i class="encounter-bubble" style="--bubble-color: ${color}; --bubble-size: ${size}px; --bubble-delay: ${delay}s" aria-hidden="true"></i>`);
+        bubbles.push(`
+          <button class="encounter-bubble" type="button"
+            aria-label="${escapeHtml(this.copy.encounteredAria)} ${index + 1}"
+            data-gravity-bubble data-color="${color}" data-strength="${point.strength.toFixed(3)}"
+            style="--bubble-color: ${color}; --bubble-size: ${point.sizePx}px; --bubble-delay: ${delay}s; --bubble-x: ${point.xPercent.toFixed(2)}%; --bubble-y: ${point.yPercent.toFixed(2)}%; --bubble-strength: ${point.strength.toFixed(3)}; --bubble-opacity: ${point.opacity.toFixed(3)}">
+            <i class="bubble-halo" aria-hidden="true"></i><i class="bubble-core" aria-hidden="true"></i>
+          </button>`);
       });
       return bubbles.join('');
     }
@@ -301,9 +314,20 @@ export class ShowcaseApp {
       const value = Math.round(((binIndex + 0.5) / histogram.binCount) * 255);
       const color = rgbToHex(this.colorForOpinion(this.topic, value));
       for (let index = 0; index < visibleCount && bubbles.length < limit; index += 1) {
-        const size = 42 + ((binIndex * 17 + index * 11) % 36);
+        const bubbleIndex = bubbles.length;
+        const angle = (bubbleIndex * 137.508 + binIndex * 19) * Math.PI / 180;
+        const radius = 20 + ((binIndex * 7 + index * 5) % 20);
+        const x = 50 + Math.cos(angle) * radius;
+        const y = 50 + Math.sin(angle) * radius * 0.72;
+        const size = 46 + ((binIndex * 17 + index * 11) % 30);
         const delay = ((binIndex + index) % 8) * 0.08;
-        bubbles.push(`<i class="encounter-bubble" style="--bubble-color: ${color}; --bubble-size: ${size}px; --bubble-delay: ${delay}s" aria-hidden="true"></i>`);
+        bubbles.push(`
+          <button class="encounter-bubble" type="button"
+            aria-label="${escapeHtml(this.copy.encounteredAria)} ${bubbleIndex + 1}"
+            data-gravity-bubble data-color="${color}" data-strength="0.45"
+            style="--bubble-color: ${color}; --bubble-size: ${size}px; --bubble-delay: ${delay}s; --bubble-x: ${x.toFixed(2)}%; --bubble-y: ${y.toFixed(2)}%; --bubble-strength: .45; --bubble-opacity: .9">
+            <i class="bubble-halo" aria-hidden="true"></i><i class="bubble-core" aria-hidden="true"></i>
+          </button>`);
       }
     });
 
@@ -347,6 +371,7 @@ export class ShowcaseApp {
       this.updateOpinion(Number((event.currentTarget as HTMLInputElement).value));
     });
     this.bindColorWheel();
+    this.bindEncounterGravity();
 
     this.onClick('sync-button', () => this.sync());
     this.onClick('home-read-button', () => this.readPalette());
@@ -409,6 +434,106 @@ export class ShowcaseApp {
       const dx = event.key === 'ArrowLeft' ? -step : event.key === 'ArrowRight' ? step : 0;
       const dy = event.key === 'ArrowUp' ? -step : event.key === 'ArrowDown' ? step : 0;
       this.updateWheelSelection(point.xPercent / 100 + dx, point.yPercent / 100 + dy);
+    });
+  }
+
+  private bindEncounterGravity(): void {
+    const field = this.root.querySelector<HTMLElement>('#encounter-gravity');
+    const own = field?.querySelector<HTMLButtonElement>('#encounter-you');
+    const rippleLayer = field?.querySelector<HTMLElement>('.gravity-ripple-layer');
+    if (!field || !own || !rippleLayer) return;
+
+    const bubbles = [...field.querySelectorAll<HTMLButtonElement>('[data-gravity-bubble]')];
+    let dragging = false;
+    let collidedBubble: HTMLButtonElement | null = null;
+
+    const createRipple = (clientX: number, clientY: number, color: string) => {
+      const rect = field.getBoundingClientRect();
+      const ripple = document.createElement('i');
+      ripple.className = 'gravity-ripple';
+      ripple.style.left = `${clientX - rect.left}px`;
+      ripple.style.top = `${clientY - rect.top}px`;
+      ripple.style.setProperty('--ripple-color', color);
+      rippleLayer.append(ripple);
+      window.setTimeout(() => ripple.remove(), 1300);
+    };
+
+    const flashMix = (bubble: HTMLButtonElement) => {
+      const color = bubble.dataset.color ?? '#ffffff';
+      field.style.setProperty('--mix-color', color);
+      field.classList.remove('is-mixing');
+      void field.offsetWidth;
+      field.classList.add('is-mixing');
+      bubble.classList.add('is-touched');
+      window.setTimeout(() => {
+        field.classList.remove('is-mixing');
+        bubble.classList.remove('is-touched');
+      }, 850);
+    };
+
+    const updateGravity = (event: PointerEvent) => {
+      const rect = field.getBoundingClientRect();
+      const x = Math.max(9, Math.min(91, ((event.clientX - rect.left) / rect.width) * 100));
+      const y = Math.max(13, Math.min(87, ((event.clientY - rect.top) / rect.height) * 100));
+      own.style.setProperty('--you-x', `${x}%`);
+      own.style.setProperty('--you-y', `${y}%`);
+
+      let nearest: HTMLButtonElement | null = null;
+      let nearestDistance = Number.POSITIVE_INFINITY;
+      for (const bubble of bubbles) {
+        const bubbleRect = bubble.getBoundingClientRect();
+        const dx = event.clientX - (bubbleRect.left + bubbleRect.width / 2);
+        const dy = event.clientY - (bubbleRect.top + bubbleRect.height / 2);
+        const strength = Number(bubble.dataset.strength ?? 0.45);
+        bubble.style.setProperty('--pull-x', `${dx * strength * 0.16}px`);
+        bubble.style.setProperty('--pull-y', `${dy * strength * 0.16}px`);
+        const distance = Math.hypot(dx, dy);
+        if (distance < nearestDistance) {
+          nearest = bubble;
+          nearestDistance = distance;
+        }
+      }
+
+      const collision = nearest && nearestDistance < (nearest.offsetWidth + own.offsetWidth) * 0.42
+        ? nearest
+        : null;
+      if (collision && collision !== collidedBubble) {
+        flashMix(collision);
+        createRipple(event.clientX, event.clientY, collision.dataset.color ?? '#ffffff');
+      }
+      collidedBubble = collision;
+    };
+
+    own.addEventListener('pointerdown', (event) => {
+      dragging = true;
+      own.setPointerCapture(event.pointerId);
+      field.classList.add('is-dragging');
+      updateGravity(event);
+    });
+    own.addEventListener('pointermove', (event) => {
+      if (dragging) updateGravity(event);
+    });
+    const release = (event: PointerEvent) => {
+      if (!dragging) return;
+      dragging = false;
+      collidedBubble = null;
+      field.classList.remove('is-dragging');
+      own.style.removeProperty('--you-x');
+      own.style.removeProperty('--you-y');
+      bubbles.forEach((bubble) => {
+        bubble.style.removeProperty('--pull-x');
+        bubble.style.removeProperty('--pull-y');
+      });
+      createRipple(event.clientX, event.clientY, rgbToHex(this.colorForOpinion(this.topic, this.opinion.opinionValue, this.opinion.triangleWeights)));
+    };
+    own.addEventListener('pointerup', release);
+    own.addEventListener('pointercancel', release);
+
+    bubbles.forEach((bubble) => {
+      bubble.addEventListener('pointerdown', (event) => {
+        flashMix(bubble);
+        createRipple(event.clientX, event.clientY, bubble.dataset.color ?? '#ffffff');
+      });
     });
   }
 

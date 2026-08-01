@@ -47,6 +47,7 @@ export type UiCopy = {
   beginningTitle: string;
   remainingColors: (count: number) => string;
   encounteredAria: string;
+  gravityHint: string;
   foundTitle: string;
   foundBody: string;
   refreshPalette: string;
@@ -137,6 +138,7 @@ const COPIES: Record<Locale, UiCopy> = {
     beginningTitle: 'Your spectrum is just beginning.',
     remainingColors: (count) => `Meet ${count} more ${count === 1 ? 'color' : 'colors'} to reveal the palette.`,
     encounteredAria: 'Colors encountered',
+    gravityHint: 'Drag your color. Tap another color to send ripples—the closer it floats, the stronger the encounter.',
     foundTitle: 'A spectrum found you.',
     foundBody: 'No names and no public poll—just the colors this device encountered.',
     refreshPalette: 'Refresh palette',
@@ -194,7 +196,8 @@ const COPIES: Record<Locale, UiCopy> = {
     paletteEyebrow: '出会いのカラーパレット', paletteTitle: '歩くたび、違う色に出会える。',
     wrongTopicTitle: 'このデバイスには別の質問が入っています。', wrongTopicBody: '先に今の色を送ってから、もう一度歩いてみよう。',
     beginningTitle: 'スペクトラムは、まだ始まったばかり。', remainingColors: (count) => `あと${count}色に出会うと、パレットを見られます。`,
-    encounteredAria: '出会った色', foundTitle: 'スペクトラムが、あなたを見つけました。',
+    encounteredAria: '出会った色', gravityHint: 'あなたの色を動かそう。色をタップすると波紋が広がります。近い色ほど、強く出会った色です。',
+    foundTitle: 'スペクトラムが、あなたを見つけました。',
     foundBody: '名前も公開投票もありません。このデバイスが出会った色だけです。',
     refreshPalette: 'パレットを更新', freshWalk: '新しく歩き始める', footerPrivacy: 'デバイス同士で直接通信。名前なし。固定ゲートウェイなし。',
     capability: {
@@ -243,7 +246,8 @@ const COPIES: Record<Locale, UiCopy> = {
     revealButton: '查看我遇见的颜色', anotherDevice: '设置其他设备', paletteEyebrow: '你的相遇调色板', paletteTitle: '每次散步都有不同的色彩。',
     wrongTopicTitle: '这台设备正在使用另一个问题。', wrongTopicBody: '请先把当前颜色发送给它，再开始一次新的散步。',
     beginningTitle: '你的光谱才刚刚开始。', remainingColors: (count) => `再遇见${count}种颜色，就能看到调色板。`,
-    encounteredAria: '遇见的颜色', foundTitle: '一片光谱找到了你。', foundBody: '没有姓名，也不是公开投票——这里只有这台设备遇见的颜色。',
+    encounteredAria: '遇见的颜色', gravityHint: '拖动你的颜色。点击其他颜色会泛起涟漪；越靠近中心，代表相遇时的信号越强。',
+    foundTitle: '一片光谱找到了你。', foundBody: '没有姓名，也不是公开投票——这里只有这台设备遇见的颜色。',
     refreshPalette: '刷新调色板', freshWalk: '开始新的散步', footerPrivacy: '设备间直接通信。不记录姓名。无需固定网关。',
     capability: {
       insecure: '请通过HTTPS或localhost打开BubbleWalk，才能连接设备。',
@@ -281,7 +285,8 @@ const COPIES: Record<Locale, UiCopy> = {
     revealButton: '내가 만난 색 보기', anotherDevice: '다른 기기 설정', paletteEyebrow: '나의 만남 팔레트', paletteTitle: '걸을 때마다 다른 색을 만나요.',
     wrongTopicTitle: '이 기기에는 다른 질문이 담겨 있습니다.', wrongTopicBody: '먼저 지금의 색을 보낸 뒤, 다시 걸어 보세요.',
     beginningTitle: '나의 스펙트럼은 이제 시작이에요.', remainingColors: (count) => `${count}가지 색을 더 만나면 팔레트를 볼 수 있어요.`,
-    encounteredAria: '만난 색', foundTitle: '스펙트럼이 나를 찾아왔어요.', foundBody: '이름도 공개 투표도 없이, 이 기기가 만난 색만 보여 줍니다.',
+    encounteredAria: '만난 색', gravityHint: '나의 색을 움직여 보세요. 다른 색을 누르면 물결이 퍼져요. 중심에 가까울수록 더 강하게 만난 색이에요.',
+    foundTitle: '스펙트럼이 나를 찾아왔어요.', foundBody: '이름도 공개 투표도 없이, 이 기기가 만난 색만 보여 줍니다.',
     refreshPalette: '팔레트 새로고침', freshWalk: '새로 걷기', footerPrivacy: '기기끼리 직접 통신. 이름 없음. 고정 게이트웨이 없음.',
     capability: {
       insecure: '기기에 연결하려면 HTTPS 또는 localhost에서 BubbleWalk를 열어 주세요.',
