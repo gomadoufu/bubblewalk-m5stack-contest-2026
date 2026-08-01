@@ -18,18 +18,17 @@ import {
 } from './domain/triangle-picker';
 import { createOpinion, type UserOpinion } from './domain/user-opinion';
 import { APP_VERSION } from './app-version';
+import {
+  copyForLocale,
+  isLocale,
+  localeFromLanguageTags,
+  SUPPORTED_LOCALES,
+  type Locale,
+} from './localization';
 
 type Screen = 'create' | 'walk' | 'reveal';
 
-const SYNC_COPY: Record<SyncStage, string> = {
-  device_ready: 'Found your BubbleWalk',
-  connect: 'Connecting…',
-  connected: 'Connected',
-  topic_written: 'Sending the question…',
-  opinion_written: 'Sending your color…',
-  settled: 'Lighting it up…',
-  disconnected: 'Your color is ready',
-};
+const LOCALE_STORAGE_KEY = 'bubblewalk/locale/v1';
 
 export class ShowcaseApp {
   private readonly gatt = new BubbleWalkGattRepository(new WebBluetoothClient());
@@ -44,6 +43,7 @@ export class ShowcaseApp {
   private notice = '';
   private noticeKind: 'info' | 'error' = 'info';
   private busy = false;
+  private locale = initialLocale();
 
   constructor(private readonly root: HTMLElement) {}
 
@@ -62,34 +62,57 @@ export class ShowcaseApp {
   }
 
   render(): void {
+    const copy = this.copy;
     const ownColor = this.colorForOpinion(this.topic, this.opinion.opinionValue, this.opinion.triangleWeights);
     const capability = this.gatt.capability();
+    document.documentElement.lang = this.locale;
+    document.title = copy.pageTitle;
+    document.querySelector<HTMLMetaElement>('meta[name="description"]')?.setAttribute('content', copy.pageDescription);
 
     this.root.innerHTML = `
       <div class="ambient ambient-one"></div>
       <div class="ambient ambient-two"></div>
       <header class="hero">
-        <a class="brand" href="#top" aria-label="BubbleWalk home">
-          <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
-          <span>BubbleWalk</span>
-        </a>
+        <div class="hero-topbar">
+          <a class="brand" href="#top" aria-label="${escapeHtml(copy.homeAria)}">
+            <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span>BubbleWalk</span>
+          </a>
+          ${this.renderLanguageSwitcher()}
+        </div>
         <p class="contest-label">M5Stack Global Innovation Contest 2026</p>
-        <h1>Wear your color.<br><span>Meet a spectrum.</span></h1>
-        <p class="hero-copy">Choose your side of a question, light up a pocket-sized device, and watch nearby viewpoints appear as color.</p>
+        <h1>${escapeHtml(copy.heroLineOne)}<br><span>${escapeHtml(copy.heroLineTwo)}</span></h1>
+        <p class="hero-copy">${escapeHtml(copy.heroCopy)}</p>
       </header>
 
       <main id="top" class="shell">
         ${this.renderScreen(ownColor)}
-        ${!capability.available ? `<p class="browser-note">${escapeHtml(capability.message)}</p>` : ''}
+        ${!capability.available ? `<p class="browser-note">${escapeHtml(this.capabilityMessage(capability.reason))}</p>` : ''}
       </main>
 
       <footer>
-        <span>Device to device. No names. No fixed gateway.</span>
+        <span>${escapeHtml(copy.footerPrivacy)}</span>
         <span>BubbleWalk · Web App ${APP_VERSION}</span>
       </footer>
     `;
 
     this.bindEvents();
+  }
+
+  private renderLanguageSwitcher(): string {
+    const copy = this.copy;
+    const options = SUPPORTED_LOCALES.map((locale) => {
+      const label = copyForLocale(locale).languageName;
+      return `<button type="button" data-locale="${locale}" lang="${locale}" aria-pressed="${locale === this.locale}">${escapeHtml(label)}</button>`;
+    }).join('');
+    return `
+      <details class="language-switcher">
+        <summary aria-label="${escapeHtml(copy.languageMenuLabel)}">
+          <span aria-hidden="true">文</span><b>${escapeHtml(copy.languageName)}</b>
+        </summary>
+        <div class="language-options" role="group" aria-label="${escapeHtml(copy.languageMenuLabel)}">${options}</div>
+      </details>
+    `;
   }
 
   private renderScreen(ownColor: RgbColor): string {
@@ -99,28 +122,30 @@ export class ShowcaseApp {
   }
 
   private renderCreate(ownColor: RgbColor): string {
+    const copy = this.copy;
     const topicButtons = this.topics
-      .map(
-        (topic, index) => `
+      .map((topic, index) => {
+        const text = this.topicCopy(topic);
+        return `
           <button class="topic-card ${topic.topicId === this.topic.topicId ? 'is-active' : ''}" data-topic-index="${index}" type="button">
-            <span>${escapeHtml(topic.shortTitle ?? `Question ${index + 1}`)}</span>
-            <strong>${escapeHtml(topic.title)}</strong>
-          </button>`,
-      )
+            <span>${escapeHtml(text?.shortTitle ?? topic.shortTitle ?? copy.questionFallback(index + 1))}</span>
+            <strong>${escapeHtml(text?.title ?? topic.title)}</strong>
+          </button>`;
+      })
       .join('');
 
     return `
       <section class="showcase-card create-card">
         <div class="section-heading">
-          <p class="eyebrow">Pick a question</p>
-          <h2>What color are you today?</h2>
+          <p class="eyebrow">${escapeHtml(copy.pickQuestion)}</p>
+          <h2>${escapeHtml(copy.colorToday)}</h2>
         </div>
         <div class="topic-grid">${topicButtons}</div>
 
         <div class="color-studio">
           <div class="color-preview">
             <div class="color-orbit" style="--opinion-color: ${rgbToHex(ownColor)}">
-              <div class="color-orb"><span>You</span></div>
+              <div class="color-orb"><span>${escapeHtml(copy.you)}</span></div>
             </div>
             <p id="color-hex">${rgbToHex(ownColor).toUpperCase()}</p>
           </div>
@@ -131,63 +156,67 @@ export class ShowcaseApp {
 
         <div class="send-panel">
           <div>
-            <p class="eyebrow">Light up</p>
-            <h3>Press G9, then send your color.</h3>
-            <p>The button opens a short Bluetooth window on NanoH2.</p>
+            <p class="eyebrow">${escapeHtml(copy.lightUp)}</p>
+            <h3>${escapeHtml(copy.sendTitle)}</h3>
+            <p>${escapeHtml(copy.sendDescription)}</p>
           </div>
           <button id="sync-button" class="primary-action" type="button" ${this.busy ? 'disabled' : ''}>
-            ${this.busy ? 'Sending…' : 'Send to BubbleWalk'}
+            ${escapeHtml(this.busy ? copy.sending : copy.sendButton)}
           </button>
         </div>
-        ${this.selectedDevice ? '<button id="change-device" class="text-action" type="button">Choose another device</button>' : ''}
+        ${this.selectedDevice ? `<button id="change-device" class="text-action" type="button">${escapeHtml(copy.changeDevice)}</button>` : ''}
         ${this.renderNotice()}
       </section>
     `;
   }
 
   private renderOpinionControl(ownColor: RgbColor): string {
+    const copy = this.copy;
+    const topicText = this.topicCopy(this.topic);
     if (this.topic.selectionMode === 'triangle' && this.topic.choices?.length === 3) {
       return `
-        <p class="control-prompt">Choose one, or make a color in between.</p>
+        <p class="control-prompt">${escapeHtml(copy.trianglePrompt)}</p>
         <div class="choice-row">
           ${this.topic.choices
             .map((choice, index) => {
               const color = choice.rgb ?? this.colorForOpinion(this.topic, choice.value);
               const selected = this.opinion.triangleWeights?.[index] === 1;
-              return `<button class="choice-chip ${selected ? 'is-active' : ''}" data-choice-index="${index}" type="button" style="--choice-color: ${rgbToHex(color)}"><i></i>${escapeHtml(choice.label)}</button>`;
+              const label = topicText?.choices[choice.id] ?? choice.label;
+              return `<button class="choice-chip ${selected ? 'is-active' : ''}" data-choice-index="${index}" type="button" style="--choice-color: ${rgbToHex(color)}"><i></i>${escapeHtml(label)}</button>`;
             })
             .join('')}
         </div>
         <label class="blend-control">
-          <span><b>${escapeHtml(this.topic.leftLabel)}</b><b>${escapeHtml(this.topic.rightLabel)}</b></span>
+          <span><b>${escapeHtml(topicText?.leftLabel ?? this.topic.leftLabel)}</b><b>${escapeHtml(topicText?.rightLabel ?? this.topic.rightLabel)}</b></span>
           <input id="opinion-slider" type="range" min="0" max="255" value="${this.opinion.opinionValue}" style="--slider-color: ${rgbToHex(ownColor)}" />
-          <small>Slide to blend the colors</small>
+          <small>${escapeHtml(copy.blendHint)}</small>
         </label>
       `;
     }
 
     return `
-      <p class="control-prompt">Move the glow to the place that feels like you.</p>
+      <p class="control-prompt">${escapeHtml(copy.spectrumPrompt)}</p>
       <label class="spectrum-control">
-        <span><b>${escapeHtml(this.topic.leftLabel)}</b><b>${escapeHtml(this.topic.rightLabel)}</b></span>
+        <span><b>${escapeHtml(topicText?.leftLabel ?? this.topic.leftLabel)}</b><b>${escapeHtml(topicText?.rightLabel ?? this.topic.rightLabel)}</b></span>
         <input id="opinion-slider" type="range" min="0" max="255" value="${this.opinion.opinionValue}" style="--slider-color: ${rgbToHex(ownColor)}" />
       </label>
     `;
   }
 
   private renderWalk(ownColor: RgbColor): string {
+    const copy = this.copy;
     return `
       <section class="showcase-card walk-card">
         <div class="walk-visual" style="--opinion-color: ${rgbToHex(ownColor)}">
           <span class="signal signal-one"></span><span class="signal signal-two"></span><span class="signal signal-three"></span>
-          <div class="color-orb"><span>You</span></div>
+          <div class="color-orb"><span>${escapeHtml(copy.you)}</span></div>
         </div>
-        <p class="eyebrow">Your color is walking</p>
-        <h2>Bring BubbleWalk near other colors.</h2>
-        <p>Each device exchanges a tiny anonymous color signal directly with the devices it meets. The NeoHEX rings come alive as encounters happen.</p>
+        <p class="eyebrow">${escapeHtml(copy.walkingEyebrow)}</p>
+        <h2>${escapeHtml(copy.walkingTitle)}</h2>
+        <p>${escapeHtml(copy.walkingDescription)}</p>
         <div class="action-row">
-          <button id="reveal-button" class="primary-action" type="button" ${this.busy ? 'disabled' : ''}>Reveal the colors I met</button>
-          <button id="another-button" class="secondary-action" type="button">Set up another device</button>
+          <button id="reveal-button" class="primary-action" type="button" ${this.busy ? 'disabled' : ''}>${escapeHtml(copy.revealButton)}</button>
+          <button id="another-button" class="secondary-action" type="button">${escapeHtml(copy.anotherDevice)}</button>
         </div>
         ${this.renderNotice()}
       </section>
@@ -195,34 +224,35 @@ export class ShowcaseApp {
   }
 
   private renderReveal(ownColor: RgbColor): string {
+    const copy = this.copy;
     const privacy = decideHistogramPrivacy(this.topic, this.histogram);
     const matchingTopic = this.histogram?.topicIdHash === this.topic.topicIdHash && this.histogram.topicVersion === this.topic.topicVersion;
     let result: string;
 
     if (!matchingTopic) {
-      result = `<div class="result-message"><span>↻</span><h3>This device is carrying another question.</h3><p>Send your current color to it first, then take another walk.</p></div>`;
+      result = `<div class="result-message"><span>↻</span><h3>${escapeHtml(copy.wrongTopicTitle)}</h3><p>${escapeHtml(copy.wrongTopicBody)}</p></div>`;
     } else if (!privacy.canShowBins) {
       const remaining = Math.max(1, this.topic.minDisplaySampleCount - (this.histogram?.sampleCount ?? 0));
-      result = `<div class="result-message"><span>✦</span><h3>Your spectrum is just beginning.</h3><p>Meet ${remaining} more ${remaining === 1 ? 'color' : 'colors'} to reveal the palette.</p></div>`;
+      result = `<div class="result-message"><span>✦</span><h3>${escapeHtml(copy.beginningTitle)}</h3><p>${escapeHtml(copy.remainingColors(remaining))}</p></div>`;
     } else {
       result = `
-        <div class="encounter-cloud" aria-label="Colors encountered">
+        <div class="encounter-cloud" aria-label="${escapeHtml(copy.encounteredAria)}">
           ${this.renderEncounterBubbles(this.histogram)}
-          <div class="encounter-you" style="--opinion-color: ${rgbToHex(ownColor)}"><span>You</span></div>
+          <div class="encounter-you" style="--opinion-color: ${rgbToHex(ownColor)}"><span>${escapeHtml(copy.you)}</span></div>
         </div>
-        <div class="result-message compact"><span>✦</span><h3>A spectrum found you.</h3><p>No names and no public poll—just the colors this device encountered.</p></div>
+        <div class="result-message compact"><span>✦</span><h3>${escapeHtml(copy.foundTitle)}</h3><p>${escapeHtml(copy.foundBody)}</p></div>
       `;
     }
 
     return `
       <section class="showcase-card reveal-card">
-        <p class="eyebrow">Your encounter palette</p>
-        <h2>Every walk looks different.</h2>
+        <p class="eyebrow">${escapeHtml(copy.paletteEyebrow)}</p>
+        <h2>${escapeHtml(copy.paletteTitle)}</h2>
         ${result}
         <div class="action-row">
-          <button id="refresh-button" class="primary-action" type="button" ${this.busy ? 'disabled' : ''}>Refresh palette</button>
-          <button id="fresh-button" class="secondary-action" type="button" ${this.busy ? 'disabled' : ''}>Start a fresh walk</button>
-          <button id="another-button" class="text-action" type="button">Set up another device</button>
+          <button id="refresh-button" class="primary-action" type="button" ${this.busy ? 'disabled' : ''}>${escapeHtml(copy.refreshPalette)}</button>
+          <button id="fresh-button" class="secondary-action" type="button" ${this.busy ? 'disabled' : ''}>${escapeHtml(copy.freshWalk)}</button>
+          <button id="another-button" class="text-action" type="button">${escapeHtml(copy.anotherDevice)}</button>
         </div>
         ${this.renderNotice()}
       </section>
@@ -255,6 +285,16 @@ export class ShowcaseApp {
   }
 
   private bindEvents(): void {
+    this.root.querySelectorAll<HTMLButtonElement>('[data-locale]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const locale = button.dataset.locale;
+        if (!isLocale(locale)) return;
+        this.locale = locale;
+        saveLocale(locale);
+        this.render();
+      });
+    });
+
     this.root.querySelectorAll<HTMLButtonElement>('[data-topic-index]').forEach((button) => {
       button.addEventListener('click', () => {
         const topic = this.topics[Number(button.dataset.topicIndex)];
@@ -335,12 +375,12 @@ export class ShowcaseApp {
   private async sync(): Promise<void> {
     if (this.busy) return;
     if (!this.gatt.capability().available) {
-      this.setNotice(this.gatt.capability().message, 'error');
+      this.setNotice(this.capabilityMessage(this.gatt.capability().reason), 'error');
       return;
     }
 
     this.busy = true;
-    this.setNotice('Keep G9 pressed briefly while BubbleWalk appears.', 'info', false);
+    this.setNotice(this.copy.notices.prepareSync, 'info', false);
     this.render();
 
     try {
@@ -348,20 +388,20 @@ export class ShowcaseApp {
         this.topic,
         this.opinion,
         this.selectedDevice ?? undefined,
-        (stage) => this.updateVisibleNotice(SYNC_COPY[stage]),
+        (stage) => this.updateVisibleNotice(this.syncMessage(stage)),
       );
       this.selectedDevice = result.device;
       this.deviceStore.remember(result.device);
       this.deviceStore.saveSelectedDeviceId(result.device.id);
       this.screen = 'walk';
-      this.setNotice('Your color is glowing on NeoHEX.', 'info', false);
+      this.setNotice(this.copy.notices.syncDone, 'info', false);
     } catch (error) {
       console.error(error);
       if (error instanceof Error && error.message === 'selected_device_unavailable') {
         this.selectedDevice = null;
         this.deviceStore.saveSelectedDeviceId(null);
       }
-      this.setNotice(friendlyBleError(error), 'error', false);
+      this.setNotice(this.friendlyBleError(error), 'error', false);
     } finally {
       this.busy = false;
       this.render();
@@ -371,7 +411,7 @@ export class ShowcaseApp {
   private async readPalette(): Promise<void> {
     if (this.busy) return;
     this.busy = true;
-    this.setNotice('Reading the colors this device met…', 'info', false);
+    this.setNotice(this.copy.notices.reading, 'info', false);
     this.render();
 
     try {
@@ -384,7 +424,7 @@ export class ShowcaseApp {
       this.clearNotice(false);
     } catch (error) {
       console.error(error);
-      this.setNotice(friendlyBleError(error), 'error', false);
+      this.setNotice(this.friendlyBleError(error), 'error', false);
     } finally {
       this.busy = false;
       this.render();
@@ -394,7 +434,7 @@ export class ShowcaseApp {
   private async startFreshWalk(): Promise<void> {
     if (this.busy) return;
     this.busy = true;
-    this.setNotice('Clearing the old palette…', 'info', false);
+    this.setNotice(this.copy.notices.clearing, 'info', false);
     this.render();
 
     try {
@@ -402,10 +442,10 @@ export class ShowcaseApp {
       this.selectedDevice = result.device;
       this.histogram = null;
       this.screen = 'walk';
-      this.setNotice('Fresh walk ready. Go meet some colors!', 'info', false);
+      this.setNotice(this.copy.notices.freshReady, 'info', false);
     } catch (error) {
       console.error(error);
-      this.setNotice(friendlyBleError(error), 'error', false);
+      this.setNotice(this.friendlyBleError(error), 'error', false);
     } finally {
       this.busy = false;
       this.render();
@@ -417,7 +457,7 @@ export class ShowcaseApp {
     this.histogram = null;
     this.deviceStore.saveSelectedDeviceId(null);
     this.screen = 'create';
-    this.setNotice('Pick a color, then choose the next BubbleWalk device.', 'info', false);
+    this.setNotice(this.copy.notices.chooseNext, 'info', false);
     this.render();
   }
 
@@ -440,6 +480,38 @@ export class ShowcaseApp {
     return mixColor(topic.leftRgb, topic.rightRgb, value);
   }
 
+  private get copy() {
+    return copyForLocale(this.locale);
+  }
+
+  private topicCopy(topic: Topic) {
+    return this.copy.topics[topic.topicId];
+  }
+
+  private capabilityMessage(reason: string): string {
+    if (reason === 'insecure_context') return this.copy.capability.insecure;
+    if (reason === 'missing_api') return this.copy.capability.missing;
+    return this.copy.capability.ready;
+  }
+
+  private syncMessage(stage: SyncStage): string {
+    const sync = this.copy.sync;
+    if (stage === 'device_ready') return sync.deviceReady;
+    if (stage === 'connect') return sync.connect;
+    if (stage === 'connected') return sync.connected;
+    if (stage === 'topic_written') return sync.topicWritten;
+    if (stage === 'opinion_written') return sync.opinionWritten;
+    if (stage === 'settled') return sync.settled;
+    return sync.disconnected;
+  }
+
+  private friendlyBleError(error: unknown): string {
+    if (error instanceof DOMException && error.name === 'NotFoundError') return this.copy.errors.noDevice;
+    if (error instanceof Error && error.message === 'selected_device_unavailable') return this.copy.errors.reselect;
+    if (error instanceof Error && error.message.includes('timeout')) return this.copy.errors.timeout;
+    return this.copy.errors.generic;
+  }
+
   private setNotice(message: string, kind: 'info' | 'error', rerender = true): void {
     this.notice = message;
     this.noticeKind = kind;
@@ -458,11 +530,22 @@ export class ShowcaseApp {
   }
 }
 
-function friendlyBleError(error: unknown): string {
-  if (error instanceof DOMException && error.name === 'NotFoundError') return 'No device selected. Press G9 and try again when you are ready.';
-  if (error instanceof Error && error.message === 'selected_device_unavailable') return 'This device needs to be chosen again. Press G9, then retry.';
-  if (error instanceof Error && error.message.includes('timeout')) return 'BubbleWalk did not answer in time. Press G9 and try once more.';
-  return 'Could not reach BubbleWalk. Press G9, keep it close, and try again.';
+function initialLocale(): Locale {
+  try {
+    const saved = window.localStorage.getItem(LOCALE_STORAGE_KEY) ?? undefined;
+    if (isLocale(saved)) return saved;
+  } catch {
+    // Language detection still works when storage is unavailable.
+  }
+  return localeFromLanguageTags(navigator.languages.length > 0 ? navigator.languages : [navigator.language]);
+}
+
+function saveLocale(locale: Locale): void {
+  try {
+    window.localStorage.setItem(LOCALE_STORAGE_KEY, locale);
+  } catch {
+    // The active language still applies for the current page.
+  }
 }
 
 function escapeHtml(value: string): string {
