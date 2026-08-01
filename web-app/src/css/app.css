@@ -248,9 +248,9 @@ h1 span {
 
 .wheel-picker {
   position: relative;
-  width: min(22rem, 100%);
+  width: min(28rem, 100%);
   margin: 1rem auto 0;
-  padding: 3.2rem 3.1rem 2.7rem;
+  padding: 4rem 4.2rem 4.5rem;
 }
 .color-wheel {
   position: relative;
@@ -292,14 +292,17 @@ h1 span {
   color: white;
   background: rgba(255,255,255,.07);
   font-weight: 800;
-  white-space: nowrap;
+  max-width: 46%;
+  line-height: 1.15;
+  text-align: left;
+  white-space: normal;
   cursor: pointer;
 }
 .wheel-choice i { flex: 0 0 auto; width: .9rem; aspect-ratio: 1; border-radius: 50%; background: var(--choice-color); box-shadow: 0 0 .8rem var(--choice-color); }
 .wheel-choice.is-active { border-color: var(--choice-color); background: color-mix(in srgb, var(--choice-color), transparent 78%); }
 .wheel-choice-0 { bottom: 0; left: 0; }
 .wheel-choice-1 { top: 0; left: 50%; transform: translateX(-50%); }
-.wheel-choice-2 { right: 0; bottom: 0; }
+.wheel-choice-2 { right: 0; bottom: 0; text-align: right; }
 .wheel-choice-1:hover { transform: translateX(-50%) translateY(-2px); }
 .wheel-hint { display: block; color: rgba(255,255,255,.48); text-align: center; line-height: 1.5; }
 
@@ -560,7 +563,7 @@ footer {
   .shell { width: min(100% - 1rem, 1040px); }
   .showcase-card { padding: 1.1rem; border-radius: 1.5rem; }
   .color-studio { padding: 1.2rem; border-radius: 1.4rem; }
-  .wheel-picker { padding-right: 2.2rem; padding-left: 2.2rem; }
+  .wheel-picker { padding: 4rem 2.2rem 4.8rem; }
   .wheel-choice { font-size: .78rem; }
   .hero-topbar { align-items: flex-start; }
   .brand { padding-top: .45rem; }

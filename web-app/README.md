@@ -3,7 +3,7 @@
 The public, showcase-only interface for BubbleWalk. From the home screen, one
 iPad can run either side of the demonstration:
 
-- choose a question and make a color, then send it to NanoH2 over Web
+- choose a question and make a color, then send it to BubbleWalk over Web
   Bluetooth; or
 - select a BubbleWalk and read its anonymous encounter palette directly.
 
@@ -20,7 +20,7 @@ is remembered in the browser.
 The open-campus topic asks what visitors would like to focus on at university:
 making games or art, connecting with friends, or learning knowledge and skills.
 The circular picker blends those three meanings; the selected mix is sent to
-NanoH2 as the existing triangle coordinates.
+BubbleWalk firmware as the existing triangle coordinates.
 
 ## Development
 
