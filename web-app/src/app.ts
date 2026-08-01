@@ -616,7 +616,9 @@ export class ShowcaseApp {
       const result = await this.gatt.syncTopicAndOpinion(
         this.topic,
         this.opinion,
-        this.selectedDevice ?? undefined,
+        // The home action must always show the browser picker so staff can
+        // match the number on BubbleWalk when several devices are waiting.
+        undefined,
         (stage) => this.updateVisibleNotice(this.syncMessage(stage)),
       );
       this.selectedDevice = result.device;
@@ -650,7 +652,9 @@ export class ShowcaseApp {
     this.render();
 
     try {
-      const result = await this.gatt.readResult(this.selectedDevice ?? undefined);
+      // Reading from the home screen is also an explicit device-selection
+      // action; a remembered device may be a different BubbleWalk.
+      const result = await this.gatt.readResult();
       this.selectedDevice = result.device;
       this.histogram = result.histogram;
       this.encounterSamples = result.encounterSamples;
