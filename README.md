@@ -42,6 +42,9 @@ the general public and is not intended to identify people.
 - `web-app/`: TypeScript/Vite Web Bluetooth application
 - `assets/`: privacy-reviewed demonstration photos with metadata removed
 
+The Web App can be switched between English, Japanese, Simplified Chinese, and
+Korean from the expandable language menu in its header.
+
 ## Build the firmware
 
 Install PlatformIO, connect a NanoH2, and run:

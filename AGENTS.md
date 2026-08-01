@@ -66,8 +66,8 @@ firmware and the showcase Web Bluetooth application.
   Vitest coverage.
 - Web Bluetooth requires HTTPS or localhost and a user gesture for device
   selection. Do not design flows that silently connect without a gesture.
-- Keep visible showcase copy in English unless localization is explicitly
-  requested.
+- Keep the English, Japanese, Simplified Chinese, and Korean showcase copy in
+  `src/localization.ts` aligned when visible UI text changes.
 - When changing the displayed version, update the canonical application version
   and any user-visible version references together.
 

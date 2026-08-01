@@ -11,6 +11,10 @@ flow:
 Encounter summaries stay on the device and are shown only after the minimum
 display threshold is reached.
 
+The interface supports English, Japanese, Simplified Chinese, and Korean. Use
+the expandable language menu in the header to switch languages; the selection
+is remembered in the browser.
+
 ## Development
 
 ```sh
