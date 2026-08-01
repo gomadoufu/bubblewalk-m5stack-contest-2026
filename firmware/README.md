@@ -37,6 +37,26 @@ pio run -e participant -t upload --upload-port /dev/cu.usbmodemXXXX
 All participant devices use the same binary. Runtime identifiers are derived
 on the device; this repository does not contain device-specific addresses.
 
+## Assign device numbers
+
+Assign each exhibition device a unique number from 1 through 7 after flashing.
+Open the serial monitor and enter the number once:
+
+```text
+number 1
+```
+
+Use `number 2` through `number 7` for the remaining devices. The number is
+stored in flash and the device restarts automatically. `status` prints the
+saved `device_number`. If no number has been assigned, the firmware creates a
+stable fallback from its runtime identity; this fallback is not guaranteed to
+be unique, so explicitly assign all seven devices before the exhibition.
+
+During the G9 synchronization window, BubbleWalk displays the saved number as
+a white 3-by-5 pixel digit on NeoHEX. The Web Bluetooth picker advertises the
+matching name, such as `BubbleWalk 1`, so the physical device and picker entry
+can be matched without exposing a hardware address.
+
 ## NeoHEX animations
 
 The animations are part of the normal BubbleWalk interaction; there is no

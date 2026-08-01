@@ -61,6 +61,7 @@ public:
   void clearEncounters();
   void resetPixelTest() { testPixelIndex_ = 0; }
   void showPixelTestStep(RgbColor color, uint8_t brightness);
+  void showDeviceNumber(uint8_t number, RgbColor color, uint8_t brightness);
 
   EncounterDisplayUpdate observeEncounter(
       RgbColor color, uint8_t nodeId, uint16_t sequence, int8_t rssi,

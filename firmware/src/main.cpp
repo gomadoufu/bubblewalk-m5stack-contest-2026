@@ -43,7 +43,7 @@ using bubblewalk::writeLe32;
 #endif
 
 #ifndef TOPIC_VERSION
-#define TOPIC_VERSION 2
+#define TOPIC_VERSION 3
 #endif
 
 #ifndef TOPIC_LEFT_RGB
@@ -261,8 +261,8 @@ enum TopicSelectionMode : uint8_t {
 };
 
 static constexpr uint8_t kFirmwareMajor = 0;
-static constexpr uint8_t kFirmwareMinor = 4;
-static constexpr uint8_t kFirmwarePatch = 1;
+static constexpr uint8_t kFirmwareMinor = 5;
+static constexpr uint8_t kFirmwarePatch = 0;
 static constexpr uint8_t kLayoutVersion = 1;
 static constexpr uint8_t kProtocolVersion = 2;
 static constexpr uint16_t kCompanyId = 0xFFFF;
@@ -309,8 +309,12 @@ static constexpr uint32_t kSerialTxTimeoutMs = 1;
 static constexpr size_t kSerialTxBufferSize = 1024;
 static constexpr uint32_t kSyncOpinionDisconnectDelayMs = 300;
 static constexpr uint8_t kZeroNodeIdFallback = 255;
+static constexpr uint8_t kMinDeviceNumber = 1;
+static constexpr uint8_t kMaxDeviceNumber = 7;
+static constexpr uint8_t kDeviceNumberDisplayMinBrightness = 64;
 
 static const RgbColor kStatusLedResetColor = {255, 255, 255};
+static const RgbColor kDeviceNumberColor = {255, 255, 255};
 
 static const char *const kGattServiceUuid = "b0052026-0000-4b42-8051-504250000000";
 static const char *const kTopicConfigUuid = "b0052026-0001-4b42-8051-504250000000";
@@ -321,6 +325,7 @@ static const char *const kCommandUuid = "b0052026-0005-4b42-8051-504250000000";
 static const char *const kEncounterSamplesUuid = "b0052026-0006-4b42-8051-504250000000";
 static const char *const kFlashSnapshotNamespace = "bubblewalk";
 static const char *const kFlashSnapshotKey = "hist";
+static const char *const kDeviceNumberKey = "device_no";
 
 struct __attribute__((packed)) FlashHistogramSnapshot {
   uint32_t magic;
@@ -416,6 +421,7 @@ static float displayTriangleX = static_cast<float>(DEFAULT_OPINION_VALUE);
 static float displayTriangleY = 128.0f;
 static uint8_t lastError = NoError;
 static uint8_t deviceNodeId = kZeroNodeIdFallback;
+static uint8_t deviceNumber = kMinDeviceNumber;
 
 static HistogramState histogram = {};
 static DedupEntry dedupCache[kDedupCacheSize] = {};
@@ -428,10 +434,12 @@ static bool encounterSampleOverflow = false;
 static bool pixelTestMode = false;
 static uint32_t lastStatusMillis = 0;
 static uint32_t lastPixelTestMillis = 0;
+static uint32_t lastDeviceNumberDisplayMillis = 0;
 static uint16_t advSeq = 0;
 static bool advertisingPayloadDirty = true;
 static String serialLine;
 static Preferences flashPreferences;
+static bool preferencesReady = false;
 static bool flashSnapshotReady = false;
 static bool flashSnapshotDirty = false;
 static uint32_t lastFlashSnapshotAttemptMillis = 0;
@@ -477,6 +485,7 @@ static char bleName[32] = {};
 #endif
 
 static void setupDeviceIdentity();
+static void setupDeviceNumber();
 static uint8_t currentNodeId();
 static void renderDisplay();
 static void updateGattReadableValues(bool notifyStatus = false);
@@ -528,6 +537,49 @@ static uint8_t nodeIdFromHardwareIdentity(const uint8_t identity[6]) {
 
 static uint8_t currentNodeId() {
   return deviceNodeId;
+}
+
+static bool isValidDeviceNumber(uint8_t number) {
+  return number >= kMinDeviceNumber && number <= kMaxDeviceNumber;
+}
+
+static uint8_t fallbackDeviceNumber() {
+  const uint8_t nodeId = currentNodeId();
+  if (nodeId == 0) return kMinDeviceNumber;
+  return static_cast<uint8_t>(((nodeId - 1) % kMaxDeviceNumber) + 1);
+}
+
+static void setupDeviceNumber() {
+  const uint8_t stored = preferencesReady
+                             ? flashPreferences.getUChar(kDeviceNumberKey, 0)
+                             : 0;
+  if (isValidDeviceNumber(stored)) {
+    deviceNumber = stored;
+    Serial.printf("device_number=ready value=%u source=preferences\n", deviceNumber);
+    return;
+  }
+
+  deviceNumber = fallbackDeviceNumber();
+  if (preferencesReady) {
+    flashPreferences.putUChar(kDeviceNumberKey, deviceNumber);
+  }
+  Serial.printf("device_number=ready value=%u source=hardware_fallback requires_unique_assignment=1\n",
+                deviceNumber);
+}
+
+static bool saveDeviceNumber(uint8_t number) {
+  if (!isValidDeviceNumber(number)) {
+    Serial.printf("error=device_number_out_of_range min=%u max=%u\n",
+                  kMinDeviceNumber, kMaxDeviceNumber);
+    return false;
+  }
+  if (!preferencesReady ||
+      flashPreferences.putUChar(kDeviceNumberKey, number) != sizeof(number)) {
+    Serial.println("error=device_number_save_failed");
+    return false;
+  }
+  deviceNumber = number;
+  return true;
 }
 
 static void setupDeviceIdentity() {
@@ -633,6 +685,23 @@ static void renderDisplay() {
 }
 
 static void updateNeohexCenterPulse() {
+#if defined(ROLE_ADVERTISER) || defined(ROLE_SCANNER)
+  if (syncWindowActive) {
+    const uint32_t now = millis();
+    if (lastDeviceNumberDisplayMillis == 0 ||
+        now - lastDeviceNumberDisplayMillis >= NeohexDisplay::kFrameMs) {
+      lastDeviceNumberDisplayMillis = now;
+      const uint8_t numberBrightness =
+          brightness < kDeviceNumberDisplayMinBrightness
+              ? kDeviceNumberDisplayMinBrightness
+              : brightness;
+      neohexDisplay.showDeviceNumber(deviceNumber, kDeviceNumberColor,
+                                     numberBrightness);
+    }
+    return;
+  }
+#endif
+  lastDeviceNumberDisplayMillis = 0;
   if (pixelTestMode) return;
   neohexDisplay.update(colorForDisplayOpinion(), brightness, retentionMinutes,
                        millis());
@@ -1087,8 +1156,9 @@ static void updateGattReadableValues(bool notifyStatus) {
 }
 
 static void setupFlashHistogramSnapshot() {
+  preferencesReady = flashPreferences.begin(kFlashSnapshotNamespace, false);
 #if ENABLE_FLASH_HISTOGRAM_SNAPSHOT
-  flashSnapshotReady = flashPreferences.begin(kFlashSnapshotNamespace, false);
+  flashSnapshotReady = preferencesReady;
   if (flashSnapshotReady) {
     Serial.printf("flash_snapshot=ready namespace=%s key=%s\n",
                   kFlashSnapshotNamespace, kFlashSnapshotKey);
@@ -1097,7 +1167,8 @@ static void setupFlashHistogramSnapshot() {
   }
 #else
   flashSnapshotReady = false;
-  Serial.println("flash_snapshot=disabled");
+  Serial.printf("flash_snapshot=disabled preferences=%s\n",
+                preferencesReady ? "ready" : "failed");
 #endif
 }
 
@@ -1594,7 +1665,7 @@ static BubbleWalkServerCallbacks serverCallbacks;
 #endif
 
 static void printCommandHelp() {
-  Serial.println("commands: status | hist | reset | save | reboot | sync | encounter | opinion 0-255 | brightness 0-255 | test | static | clear | help");
+  Serial.println("commands: status | hist | reset | save | reboot | sync | encounter | number 1-7 | opinion 0-255 | brightness 0-255 | test | static | clear | help");
   Serial.printf("button_help=short_release_sync min_ms=%lu max_ms_exclusive=%lu long_release_encounter min_ms=%lu reset_hold_ms=%lu active_low=1\n",
                 static_cast<unsigned long>(kButtonMinPressMs),
                 static_cast<unsigned long>(kButtonLongPressMs),
@@ -1607,8 +1678,8 @@ static void printBootLog() {
   Serial.println("bubblewalk_nanoh2_neohex boot");
   Serial.printf("firmware=%u.%u.%u protocol=%u\n",
                 kFirmwareMajor, kFirmwareMinor, kFirmwarePatch, kProtocolVersion);
-  Serial.printf("node_id=%u role=%s role_flags=%u\n",
-                currentNodeId(), roleName(), roleFlags());
+  Serial.printf("node_id=%u device_number=%u role=%s role_flags=%u\n",
+                currentNodeId(), deviceNumber, roleName(), roleFlags());
   Serial.printf("topic_id_hash=0x%08lX topic_version=%u opinion_value=%u triangle_xy=%u,%u\n",
                 static_cast<unsigned long>(topicIdHash), topicVersion,
                 opinionValue, triangleX, triangleY);
@@ -1658,8 +1729,8 @@ static void printBootLog() {
 
 static void printStatus() {
   const RgbColor color = colorForDisplayOpinion();
-  Serial.printf("status millis=%lu node_id=%u role=%s role_flags=%u topic_id_hash=0x%08lX topic_version=%u opinion_value=%u display_opinion_value=%.2f triangle_xy=%u,%u rgb=%u,%u,%u brightness=%u histogram_bins=%u unique_peer_count=%u packet_count=%u raw_packet_count=%u duplicate_packet_count=%u sync_window=%u gatt_connected=%u ble_mode=%u advertising_seq=%u last_error=%u button=%u test_mode=%u\n",
-                static_cast<unsigned long>(millis()), currentNodeId(), roleName(),
+  Serial.printf("status millis=%lu node_id=%u device_number=%u role=%s role_flags=%u topic_id_hash=0x%08lX topic_version=%u opinion_value=%u display_opinion_value=%.2f triangle_xy=%u,%u rgb=%u,%u,%u brightness=%u histogram_bins=%u unique_peer_count=%u packet_count=%u raw_packet_count=%u duplicate_packet_count=%u sync_window=%u gatt_connected=%u ble_mode=%u advertising_seq=%u last_error=%u button=%u test_mode=%u\n",
+                static_cast<unsigned long>(millis()), currentNodeId(), deviceNumber, roleName(),
                 roleFlags(), static_cast<unsigned long>(topicIdHash), topicVersion,
                 opinionValue, displayOpinionValue, triangleX, triangleY,
                 color.r, color.g, color.b, brightness, histogramBinCount,
@@ -1970,6 +2041,14 @@ static void startSyncWindow(const char *reason, uint32_t timeoutMs) {
   syncWindowAwaitingOpinionSync = false;
   syncWindowOpinionSynced = false;
   syncWindowDeadlineMillis = millis() + timeoutMs;
+  pixelTestMode = false;
+  lastDeviceNumberDisplayMillis = 0;
+  const uint8_t numberBrightness =
+      brightness < kDeviceNumberDisplayMinBrightness
+          ? kDeviceNumberDisplayMinBrightness
+          : brightness;
+  neohexDisplay.showDeviceNumber(deviceNumber, kDeviceNumberColor,
+                                 numberBrightness);
   updateGattReadableValues(false);
 
   BLEAdvertisementData advertisementData;
@@ -2133,6 +2212,13 @@ static void handleCommand(String line) {
     closeSyncWindow("serial");
   } else if (line == "help") {
     printCommandHelp();
+  } else if (parseByteArgument(line, "number", &value)) {
+    if (saveDeviceNumber(value)) {
+      Serial.printf("device_number=saved value=%u rebooting=1\n", deviceNumber);
+      Serial.flush();
+      delay(50);
+      ESP.restart();
+    }
   } else if (parseByteArgument(line, "opinion", &value) || parseBareByte(line, &value)) {
     pixelTestMode = false;
     setOpinionState(value, value, 128, "serial");
@@ -2305,7 +2391,7 @@ static void updateButton() {
 
 static void setupBle() {
 #if defined(ROLE_ADVERTISER) || defined(ROLE_SCANNER)
-  snprintf(bleName, sizeof(bleName), "BW-%s-%02X", roleName(), currentNodeId());
+  snprintf(bleName, sizeof(bleName), "BubbleWalk %u", deviceNumber);
   if (!BLEDevice::init(String(bleName))) {
     Serial.println("ble_init=failed");
     setLastError(BleOperationFailed);
@@ -2346,6 +2432,7 @@ void setup() {
   setupDeviceIdentity();
   neohexDisplay.begin();
   setupFlashHistogramSnapshot();
+  setupDeviceNumber();
   if (!loadFlashHistogramSnapshot()) {
     resetHistogram();
   }

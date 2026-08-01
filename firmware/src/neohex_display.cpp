@@ -17,6 +17,24 @@ namespace {
 constexpr uint32_t kPaletteOrbitStepMs = 80;
 constexpr uint8_t kEncounterRippleLevel = 92;
 
+// A centered 3 x 5 canvas on the 4-5-6-7-6-5-4 NeoHEX rows.
+constexpr uint8_t kDigitPixels[15] = {
+    5, 6, 7,
+    11, 12, 13,
+    17, 18, 19,
+    23, 24, 25,
+    29, 30, 31,
+};
+constexpr const char *kDigitPatterns[7] = {
+    "010110010010111", // 1
+    "111001111100111", // 2
+    "111001111001111", // 3
+    "101101111001001", // 4
+    "111100111001111", // 5
+    "111100111101111", // 6
+    "111001010010010", // 7
+};
+
 constexpr uint8_t kNearRingPixels[NeohexDisplay::kNearRingCount] = {
     11, 12, 17, 19, 24, 25,
 };
@@ -91,6 +109,8 @@ uint8_t syncBloomLevel(uint32_t elapsed, uint32_t delayMillis) {
 
 static_assert(NEOHEX_COUNT == NeohexDisplay::kPixelCount,
               "NeoHEX display mapping requires 37 LEDs");
+static_assert(sizeof(kDigitPixels) / sizeof(kDigitPixels[0]) == 15,
+              "Device number glyphs require a 3 x 5 pixel canvas");
 
 NeohexDisplay::NeohexDisplay()
     : pixels_(kPixelCount, NEOHEX_PIN, NEO_GRB + NEO_KHZ800) {}
@@ -455,6 +475,19 @@ void NeohexDisplay::showPixelTestStep(RgbColor color, uint8_t brightness) {
   pixels_.setPixelColor(testPixelIndex_, pixels_.Color(color.r, color.g, color.b));
   pixels_.show();
   testPixelIndex_ = static_cast<uint8_t>((testPixelIndex_ + 1) % kPixelCount);
+}
+
+void NeohexDisplay::showDeviceNumber(uint8_t number, RgbColor color,
+                                     uint8_t brightness) {
+  if (number < 1 || number > 7) return;
+  pixels_.clear();
+  pixels_.setBrightness(brightness);
+  const char *pattern = kDigitPatterns[number - 1];
+  for (uint8_t i = 0; i < 15; i++) {
+    if (pattern[i] != '1') continue;
+    pixels_.setPixelColor(kDigitPixels[i], pixels_.Color(color.r, color.g, color.b));
+  }
+  pixels_.show();
 }
 
 void NeohexDisplay::clearPixels() {
