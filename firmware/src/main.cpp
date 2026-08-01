@@ -262,7 +262,7 @@ enum TopicSelectionMode : uint8_t {
 
 static constexpr uint8_t kFirmwareMajor = 0;
 static constexpr uint8_t kFirmwareMinor = 5;
-static constexpr uint8_t kFirmwarePatch = 1;
+static constexpr uint8_t kFirmwarePatch = 2;
 static constexpr uint8_t kLayoutVersion = 1;
 static constexpr uint8_t kProtocolVersion = 2;
 static constexpr uint16_t kCompanyId = 0xFFFF;
@@ -312,6 +312,7 @@ static constexpr uint8_t kZeroNodeIdFallback = 255;
 static constexpr uint8_t kMinDeviceNumber = 1;
 static constexpr uint8_t kMaxDeviceNumber = 7;
 static constexpr uint8_t kDeviceNumberDisplayMinBrightness = 64;
+static constexpr uint32_t kStartupDeviceNumberDisplayMs = 1200;
 
 static const RgbColor kStatusLedResetColor = {255, 255, 255};
 static const RgbColor kDeviceNumberColor = {255, 255, 255};
@@ -435,6 +436,7 @@ static bool pixelTestMode = false;
 static uint32_t lastStatusMillis = 0;
 static uint32_t lastPixelTestMillis = 0;
 static uint32_t lastDeviceNumberDisplayMillis = 0;
+static uint32_t startupDeviceNumberDisplayUntilMillis = 0;
 static uint16_t advSeq = 0;
 static bool advertisingPayloadDirty = true;
 static String serialLine;
@@ -710,10 +712,24 @@ static void renderDisplay() {
                        millis());
 }
 
+static void startStartupDeviceNumberDisplay() {
+  const uint32_t now = millis();
+  startupDeviceNumberDisplayUntilMillis = now + kStartupDeviceNumberDisplayMs;
+  lastDeviceNumberDisplayMillis = now;
+  const uint8_t numberBrightness =
+      brightness < kDeviceNumberDisplayMinBrightness
+          ? kDeviceNumberDisplayMinBrightness
+          : brightness;
+  neohexDisplay.showDeviceNumber(deviceNumber, kDeviceNumberColor,
+                                 numberBrightness);
+  Serial.printf("startup_device_number=%u duration_ms=%lu\n", deviceNumber,
+                static_cast<unsigned long>(kStartupDeviceNumberDisplayMs));
+}
+
 static void updateNeohexCenterPulse() {
+  const uint32_t now = millis();
 #if defined(ROLE_ADVERTISER) || defined(ROLE_SCANNER)
   if (syncWindowActive) {
-    const uint32_t now = millis();
     if (lastDeviceNumberDisplayMillis == 0 ||
         now - lastDeviceNumberDisplayMillis >= NeohexDisplay::kFrameMs) {
       lastDeviceNumberDisplayMillis = now;
@@ -727,6 +743,11 @@ static void updateNeohexCenterPulse() {
     return;
   }
 #endif
+  if (startupDeviceNumberDisplayUntilMillis != 0 &&
+      static_cast<int32_t>(startupDeviceNumberDisplayUntilMillis - now) > 0) {
+    return;
+  }
+  startupDeviceNumberDisplayUntilMillis = 0;
   lastDeviceNumberDisplayMillis = 0;
   if (pixelTestMode) return;
   neohexDisplay.update(colorForDisplayOpinion(), brightness, retentionMinutes,
@@ -2473,6 +2494,7 @@ void setup() {
   printBootLog();
   printStatus();
   setupBle();
+  startStartupDeviceNumberDisplay();
 }
 
 void loop() {
