@@ -200,19 +200,19 @@ h1 span {
 
 .topic-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 1fr;
   gap: 0.75rem;
   margin: 2rem 0 2.6rem;
 }
 
 .topic-card {
-  min-height: 9rem;
-  padding: 1.1rem;
+  min-height: 0;
+  padding: clamp(1.5rem, 3.5vw, 2.6rem);
   border: 1px solid #dedbea;
   border-radius: 1.25rem;
   color: var(--ink);
   background: white;
-  text-align: left;
+  text-align: center;
   cursor: pointer;
   transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
 }
@@ -227,7 +227,12 @@ h1 span {
   text-transform: uppercase;
 }
 
-.topic-card strong { font-size: 1rem; line-height: 1.35; }
+.topic-card strong {
+  display: block;
+  font-size: clamp(2rem, 5vw, 3.7rem);
+  line-height: 1.05;
+  letter-spacing: -0.055em;
+}
 .topic-card:hover { transform: translateY(-3px); border-color: #a99cff; }
 .topic-card.is-active {
   border-color: #7c5cff;
@@ -297,8 +302,8 @@ h1 span {
   border: 2px solid rgba(255,255,255,.7);
   border-radius: 50%;
   background:
-    radial-gradient(circle, var(--wheel-center) 0%, color-mix(in srgb, var(--wheel-center), transparent 38%) 34%, transparent 68%),
-    conic-gradient(from -90deg, var(--wheel-b) 0deg, var(--wheel-c) 120deg, var(--wheel-a) 240deg, var(--wheel-b) 360deg);
+    radial-gradient(circle closest-side, var(--wheel-center) 0%, transparent 100%),
+    conic-gradient(var(--wheel-b) 0deg, var(--wheel-c) 120deg, var(--wheel-a) 240deg, var(--wheel-b) 360deg);
   box-shadow: 0 0 2.2rem rgba(139,107,255,.25), inset 0 0 1.2rem rgba(255,255,255,.28);
   cursor: crosshair;
   touch-action: none;
