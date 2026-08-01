@@ -1,4 +1,8 @@
+**English** | [日本語](README.ja.md) | [简体中文](README.zh-CN.md) | [한국어](README.ko.md)
+
 # BubbleWalk
+
+![BubbleWalk — Walk. Go farther. Beyond the filter bubble.](assets/bubblewalk-banner-en.png)
 
 BubbleWalk is an infrastructure-free encounter visualization system built with
 small M5Stack devices. Each person carries an LED device, chooses a topic and
