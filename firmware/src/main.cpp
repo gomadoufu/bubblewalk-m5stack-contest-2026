@@ -262,7 +262,7 @@ enum TopicSelectionMode : uint8_t {
 
 static constexpr uint8_t kFirmwareMajor = 0;
 static constexpr uint8_t kFirmwareMinor = 5;
-static constexpr uint8_t kFirmwarePatch = 0;
+static constexpr uint8_t kFirmwarePatch = 1;
 static constexpr uint8_t kLayoutVersion = 1;
 static constexpr uint8_t kProtocolVersion = 2;
 static constexpr uint16_t kCompanyId = 0xFFFF;
@@ -482,6 +482,7 @@ static ParticipantBleMode participantBleMode = ParticipantBleIdle;
 static uint32_t participantNextSwitchMillis = 0;
 static uint32_t participantPhaseCounter = 0;
 static char bleName[32] = {};
+static char blePickerName[9] = {};
 #endif
 
 static void setupDeviceIdentity();
@@ -594,6 +595,31 @@ static void setupDeviceIdentity() {
   Serial.printf("device_identity=ready node_id=%u source=hardware_identity\n",
                 currentNodeId());
 }
+
+#if defined(CONFIG_NIMBLE_ENABLED) && \
+    (defined(ROLE_ADVERTISER) || defined(ROLE_SCANNER))
+static bool setupBubbleWalkBleIdentity() {
+  uint8_t address[6] = {};
+  if (esp_read_mac(address, ESP_MAC_BASE) != ESP_OK) {
+    Serial.println("ble_identity=failed reason=esp_read_mac");
+    return false;
+  }
+
+  // Move BubbleWalk into a deterministic random-static address namespace.
+  // This keeps one shared firmware image and a stable identity per device,
+  // while making browsers discard names cached from pre-numbered firmware.
+  address[0] = static_cast<uint8_t>((address[0] & 0x3F) | 0xC0);
+  BLEAddress bubbleWalkAddress(address, BLE_ADDR_RANDOM);
+  if (!BLEDevice::setOwnAddr(bubbleWalkAddress) ||
+      !BLEDevice::setOwnAddrType(BLE_OWN_ADDR_RANDOM)) {
+    Serial.println("ble_identity=failed reason=random_static_address");
+    return false;
+  }
+
+  Serial.println("ble_identity=ready type=bubblewalk_random_static");
+  return true;
+}
+#endif
 
 static const char *roleName() {
 #if ROLE_IS_PARTICIPANT
@@ -2054,6 +2080,7 @@ static void startSyncWindow(const char *reason, uint32_t timeoutMs) {
   BLEAdvertisementData advertisementData;
   advertisementData.setFlags(ESP_BLE_ADV_FLAG_GEN_DISC | ESP_BLE_ADV_FLAG_BREDR_NOT_SPT);
   advertisementData.setCompleteServices(BLEUUID(kGattServiceUuid));
+  advertisementData.setName(String(blePickerName));
   BLEAdvertisementData scanResponseData;
   scanResponseData.setName(String(bleName));
 
@@ -2392,11 +2419,18 @@ static void updateButton() {
 static void setupBle() {
 #if defined(ROLE_ADVERTISER) || defined(ROLE_SCANNER)
   snprintf(bleName, sizeof(bleName), "BubbleWalk %u", deviceNumber);
+  snprintf(blePickerName, sizeof(blePickerName), "Device %u", deviceNumber);
   if (!BLEDevice::init(String(bleName))) {
     Serial.println("ble_init=failed");
     setLastError(BleOperationFailed);
     return;
   }
+#if defined(CONFIG_NIMBLE_ENABLED)
+  if (!setupBubbleWalkBleIdentity()) {
+    setLastError(BleOperationFailed);
+    return;
+  }
+#endif
   bleServer = BLEDevice::createServer();
   bleServer->setCallbacks(&serverCallbacks);
   bleServer->advertiseOnDisconnect(false);
@@ -2405,7 +2439,7 @@ static void setupBle() {
 #if defined(ROLE_SCANNER)
   bleScan = BLEDevice::getScan();
 #endif
-  Serial.printf("ble_name=%s\n", bleName);
+  Serial.printf("ble_name=%s picker_name=%s\n", bleName, blePickerName);
   Serial.println("startup_state=encounter sync_window=button_short_press normal_ble_roles=started");
   startNormalBleRoles();
 #endif

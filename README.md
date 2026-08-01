@@ -74,7 +74,7 @@ corepack pnpm run dev
 
 Open the localhost URL printed by Vite. Press the NanoH2 G9 button briefly to
 open its synchronization window. Match the 1-7 digit shown on BubbleWalk with
-the browser-picker name, such as `BubbleWalk 1`. On iPhone or iPad, use a Web
+the browser-picker name, such as `Device 1`. On iPhone or iPad, use a Web
 Bluetooth-capable browser such as Bluefy.
 
 ## Demo flow

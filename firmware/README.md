@@ -53,9 +53,12 @@ stable fallback from its runtime identity; this fallback is not guaranteed to
 be unique, so explicitly assign all seven devices before the exhibition.
 
 During the G9 synchronization window, BubbleWalk displays the saved number as
-a white 3-by-5 pixel digit on NeoHEX. The Web Bluetooth picker advertises the
-matching name, such as `BubbleWalk 1`, so the physical device and picker entry
-can be matched without exposing a hardware address.
+a white 3-by-5 pixel digit on NeoHEX. The primary BLE advertisement includes a
+matching compact picker name, such as `Device 1`, so the physical device and
+picker entry can be matched without exposing a hardware address. The full GATT
+and scan-response name remains `BubbleWalk 1`. Firmware 0.5.1 also uses a
+stable BubbleWalk-specific BLE identity so iPhone and iPad browsers do not keep
+showing a device name cached from firmware released before numbered pairing.
 
 ## NeoHEX animations
 
