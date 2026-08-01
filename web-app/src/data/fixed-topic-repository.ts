@@ -3,19 +3,19 @@ import { hexToRgb } from '../domain/rgb-color';
 
 const FIXED_TOPICS: Topic[] = [
   {
-    topicId: 'showcase-project-spark-001',
+    topicId: 'open-campus-activities-001',
     topicIdHash: 0x20260801,
-    topicVersion: 1,
-    shortTitle: 'Project spark',
-    title: 'What gives a project its spark?',
+    topicVersion: 2,
+    shortTitle: 'Campus experience',
+    title: 'What would you like to do at university?',
     selectionMode: 'triangle',
     choices: [
-      { id: 'useful', label: 'Useful', value: 0, rgb: hexToRgb('#12cfee') },
-      { id: 'playful', label: 'Playful', value: 128, rgb: hexToRgb('#b7f34b') },
-      { id: 'surprising', label: 'Surprising', value: 255, rgb: hexToRgb('#ff4fa7') },
+      { id: 'learn', label: 'Learn', value: 0, rgb: hexToRgb('#12cfee') },
+      { id: 'create', label: 'Create', value: 128, rgb: hexToRgb('#b7f34b') },
+      { id: 'connect', label: 'Connect', value: 255, rgb: hexToRgb('#ff4fa7') },
     ],
-    leftLabel: 'Useful',
-    rightLabel: 'Surprising',
+    leftLabel: 'Learn',
+    rightLabel: 'Connect',
     leftRgb: hexToRgb('#12cfee'),
     rightRgb: hexToRgb('#ff4fa7'),
     histogramBins: 16,

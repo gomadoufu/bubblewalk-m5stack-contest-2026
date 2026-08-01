@@ -43,7 +43,7 @@ using bubblewalk::writeLe32;
 #endif
 
 #ifndef TOPIC_VERSION
-#define TOPIC_VERSION 1
+#define TOPIC_VERSION 2
 #endif
 
 #ifndef TOPIC_LEFT_RGB

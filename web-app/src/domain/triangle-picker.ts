@@ -27,6 +27,15 @@ const TRIANGLE_VERTICES = [
   { x: 0.88, y: 0.88 },
 ] as const;
 
+const WHEEL_RADIUS = 0.46;
+const WHEEL_SECTOR_START_DEGREES = 30;
+const WHEEL_SECTOR_DEGREES = 120;
+const WHEEL_SECTOR_CHOICES = [
+  [2, 0],
+  [0, 1],
+  [1, 2],
+] as const;
+
 export function trianglePointFromWeights(weights: TriangleWeights): TrianglePoint {
   const normalized = normalizeTriangleWeights(weights);
   const x = TRIANGLE_VERTICES.reduce((sum, vertex, index) => sum + vertex.x * normalized[index], 0);
@@ -64,6 +73,56 @@ export function triangleSelectionFromPoint(topic: Topic, xRatio: number, yRatio:
   const choices = topic.choices ?? [];
   const weights = barycentricWeights(clampRatio(xRatio), clampRatio(yRatio));
   return triangleSelectionFromWeights(topic, weights, choices);
+}
+
+export function wheelSelectionFromPoint(topic: Topic, xRatio: number, yRatio: number): TriangleSelection {
+  const dx = clampRatio(xRatio) - 0.5;
+  const dy = clampRatio(yRatio) - 0.5;
+  const distance = Math.hypot(dx, dy);
+  const radius = Math.min(1, distance / WHEEL_RADIUS);
+  const angle = normalizeDegrees((Math.atan2(dy, dx) * 180) / Math.PI);
+  const wheelAngle = normalizeDegrees(angle - WHEEL_SECTOR_START_DEGREES);
+  const sector = Math.min(2, Math.floor(wheelAngle / WHEEL_SECTOR_DEGREES));
+  const sectorProgress = (wheelAngle % WHEEL_SECTOR_DEGREES) / WHEEL_SECTOR_DEGREES;
+  const [startChoice, endChoice] = WHEEL_SECTOR_CHOICES[sector];
+  const centerWeight = (1 - radius) / 3;
+  const weights: TriangleWeights = [centerWeight, centerWeight, centerWeight];
+  weights[startChoice] += radius * (1 - sectorProgress);
+  weights[endChoice] += radius * sectorProgress;
+
+  const selection = triangleSelectionFromWeights(topic, weights, topic.choices ?? []);
+  const angleRadians = (angle * Math.PI) / 180;
+  return {
+    ...selection,
+    point: {
+      xPercent: (0.5 + Math.cos(angleRadians) * WHEEL_RADIUS * radius) * 100,
+      yPercent: (0.5 + Math.sin(angleRadians) * WHEEL_RADIUS * radius) * 100,
+    },
+  };
+}
+
+export function wheelPointFromWeights(weights: TriangleWeights): TrianglePoint {
+  const normalized = normalizeTriangleWeights(weights);
+  const minimum = Math.min(...normalized);
+  const radius = Math.max(0, Math.min(1, 1 - 3 * minimum));
+  if (radius < 0.000001) return { xPercent: 50, yPercent: 50 };
+
+  const edgeWeights = normalized.map((weight) => (weight - minimum) / radius) as TriangleWeights;
+  const zeroChoice = normalized.findIndex((weight) => Math.abs(weight - minimum) < 0.000001);
+  let angle: number;
+  if (zeroChoice === 0) {
+    angle = 270 + WHEEL_SECTOR_DEGREES * edgeWeights[2];
+  } else if (zeroChoice === 1) {
+    angle = 30 + WHEEL_SECTOR_DEGREES * edgeWeights[0];
+  } else {
+    angle = 150 + WHEEL_SECTOR_DEGREES * edgeWeights[1];
+  }
+
+  const angleRadians = (angle * Math.PI) / 180;
+  return {
+    xPercent: (0.5 + Math.cos(angleRadians) * WHEEL_RADIUS * radius) * 100,
+    yPercent: (0.5 + Math.sin(angleRadians) * WHEEL_RADIUS * radius) * 100,
+  };
 }
 
 export function triangleWeightsForOpinion(topic: Topic, value: number): TriangleWeights {
@@ -142,4 +201,8 @@ function barycentricWeights(x: number, y: number): TriangleWeights {
 function clampRatio(value: number): number {
   if (!Number.isFinite(value)) return 0.5;
   return Math.max(0, Math.min(1, value));
+}
+
+function normalizeDegrees(value: number): number {
+  return ((value % 360) + 360) % 360;
 }

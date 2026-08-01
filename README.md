@@ -34,7 +34,7 @@ the general public and is not intended to identify people.
 - M5Stack Unit NeoHEX (37 RGB LEDs, one per NanoH2)
 - HY2.0-4P cable
 - USB power or a suitable portable power source
-- A phone or computer with a Web Bluetooth-capable browser
+- A phone, tablet, or computer with a Web Bluetooth-capable browser
 
 ## Repository layout
 
@@ -74,20 +74,24 @@ corepack pnpm run dev
 
 Open the localhost URL printed by Vite. Press the NanoH2 G9 button briefly to
 open its synchronization window, then select the `BW-participant-*` device from
-the browser picker.
+the browser picker. On iPhone or iPad, use a Web Bluetooth-capable browser such
+as Bluefy.
 
 ## Demo flow
 
 For a short demonstration:
 
 1. Power two or more NanoH2 + NeoHEX devices.
-2. Choose different opinions in the Web App and synchronize each device.
+2. On one iPad, use **Send to BubbleWalk** to choose different opinions and
+   synchronize each device.
 3. Bring the devices near one another.
 4. Watch each new opinion color pop onto the corresponding NeoHEX ring.
-5. Reconnect with the Web App and reveal the palette; the stored colors orbit
-   around NeoHEX at the same moment.
+5. Return to the Web App home screen and use **Read results** to select any
+   device and reveal its palette; the stored colors orbit around NeoHEX at the
+   same moment.
 
-The Web App is intentionally a focused, single-flow showcase experience.
+The Web App keeps both device operations on its home screen so a facilitator
+can run the whole demonstration from one iPad.
 
 ## Privacy and scope
 
