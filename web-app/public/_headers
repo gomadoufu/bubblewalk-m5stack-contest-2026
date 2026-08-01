@@ -1,0 +1,3 @@
+/*
+  Permissions-Policy: bluetooth=(self)
+  X-Content-Type-Options: nosniff
