@@ -1,4 +1,4 @@
-# BubbleWalk V1
+# BubbleWalk
 
 BubbleWalk is an infrastructure-free encounter visualization system built with
 small M5Stack devices. Each person carries an LED device, chooses a topic and
@@ -7,7 +7,7 @@ an opinion on a phone, and synchronizes that choice over Bluetooth Low Energy
 keeps a local summary of the opinions it encountered and visualizes nearby
 encounters on its NeoHEX display.
 
-This repository contains the BubbleWalk V1 implementation prepared for the
+This repository contains the BubbleWalk implementation prepared for the
 M5Stack Global Innovation Contest 2026.
 
 ![BubbleWalk devices with multicolor LEDs](assets/device-led-multicolor.jpg)
@@ -96,7 +96,7 @@ The Web App is intentionally a focused, single-flow showcase experience.
 
 ## Current status
 
-The V1 implementation has been exercised with seven NanoH2 + NeoHEX devices.
+The implementation has been exercised with seven NanoH2 + NeoHEX devices.
 The checked-in Web App tests cover BLE payload handling, topic/color logic,
 privacy thresholds, and local device storage. The public interface is designed
 for hands-on demonstration.

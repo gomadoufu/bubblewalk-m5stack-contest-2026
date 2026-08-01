@@ -85,7 +85,7 @@ export class ShowcaseApp {
 
       <footer>
         <span>Device to device. No names. No fixed gateway.</span>
-        <span>BubbleWalk V1 · Web App ${APP_VERSION}</span>
+        <span>BubbleWalk · Web App ${APP_VERSION}</span>
       </footer>
     `;
 

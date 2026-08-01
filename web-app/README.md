@@ -1,6 +1,6 @@
 # BubbleWalk Showcase Web App
 
-The public, showcase-only interface for BubbleWalk V1. It has one interaction
+The public, showcase-only interface for BubbleWalk. It has one interaction
 flow:
 
 1. choose a question and make a color;

@@ -4,7 +4,7 @@
 
 These instructions apply to the entire repository.
 
-BubbleWalk V1 is the public implementation prepared for the M5Stack Global
+BubbleWalk is the public implementation prepared for the M5Stack Global
 Innovation Contest 2026. Keep changes within that scope: NanoH2 + Unit NeoHEX
 firmware and the showcase Web Bluetooth application.
 

@@ -1,6 +1,6 @@
 # NanoH2 + NeoHEX firmware
 
-This PlatformIO project builds the BubbleWalk V1 participant firmware.
+This PlatformIO project builds the BubbleWalk participant firmware.
 
 ## Wiring
 
