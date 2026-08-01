@@ -198,48 +198,6 @@ h1 span {
   text-transform: uppercase;
 }
 
-.topic-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.75rem;
-  margin: 2rem 0 2.6rem;
-}
-
-.topic-card {
-  min-height: 0;
-  padding: clamp(1.5rem, 3.5vw, 2.6rem);
-  border: 1px solid #dedbea;
-  border-radius: 1.25rem;
-  color: var(--ink);
-  background: white;
-  text-align: center;
-  cursor: pointer;
-  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
-}
-
-.topic-card span {
-  display: block;
-  margin-bottom: 0.85rem;
-  color: #8a849e;
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.topic-card strong {
-  display: block;
-  font-size: clamp(2rem, 5vw, 3.7rem);
-  line-height: 1.05;
-  letter-spacing: -0.055em;
-}
-.topic-card:hover { transform: translateY(-3px); border-color: #a99cff; }
-.topic-card.is-active {
-  border-color: #7c5cff;
-  box-shadow: 0 0 0 3px rgba(124, 92, 255, 0.14), 0 0.8rem 2rem rgba(92, 70, 190, 0.13);
-  background: linear-gradient(145deg, #fff, #f4f0ff);
-}
-
 .color-studio {
   display: grid;
   grid-template-columns: minmax(210px, 0.72fr) minmax(0, 1.28fr);
@@ -334,9 +292,10 @@ h1 span {
   color: white;
   background: rgba(255,255,255,.07);
   font-weight: 800;
+  white-space: nowrap;
   cursor: pointer;
 }
-.wheel-choice i { width: .9rem; aspect-ratio: 1; border-radius: 50%; background: var(--choice-color); box-shadow: 0 0 .8rem var(--choice-color); }
+.wheel-choice i { flex: 0 0 auto; width: .9rem; aspect-ratio: 1; border-radius: 50%; background: var(--choice-color); box-shadow: 0 0 .8rem var(--choice-color); }
 .wheel-choice.is-active { border-color: var(--choice-color); background: color-mix(in srgb, var(--choice-color), transparent 78%); }
 .wheel-choice-0 { bottom: 0; left: 0; }
 .wheel-choice-1 { top: 0; left: 50%; transform: translateX(-50%); }
@@ -470,8 +429,6 @@ footer {
 @media (max-width: 760px) {
   .hero { padding-bottom: 3rem; }
   .contest-label { margin-top: 2.5rem; }
-  .topic-grid { grid-template-columns: 1fr; }
-  .topic-card { min-height: 0; }
   .color-studio { grid-template-columns: 1fr; }
   .home-device-actions { grid-template-columns: 1fr; }
   .primary-action { width: 100%; }

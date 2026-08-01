@@ -129,24 +129,14 @@ export class ShowcaseApp {
 
   private renderCreate(ownColor: RgbColor): string {
     const copy = this.copy;
-    const topicButtons = this.topics
-      .map((topic, index) => {
-        const text = this.topicCopy(topic);
-        return `
-          <button class="topic-card ${topic.topicId === this.topic.topicId ? 'is-active' : ''}" data-topic-index="${index}" type="button">
-            <span>${escapeHtml(text?.shortTitle ?? topic.shortTitle ?? copy.questionFallback(index + 1))}</span>
-            <strong>${escapeHtml(text?.title ?? topic.title)}</strong>
-          </button>`;
-      })
-      .join('');
+    const topicText = this.topicCopy(this.topic);
 
     return `
       <section class="showcase-card create-card">
         <div class="section-heading">
           <p class="eyebrow">${escapeHtml(copy.pickQuestion)}</p>
-          <h2>${escapeHtml(copy.colorToday)}</h2>
+          <h2>${escapeHtml(topicText?.title ?? this.topic.title)}</h2>
         </div>
-        <div class="topic-grid">${topicButtons}</div>
 
         <div class="color-studio">
           <div class="color-preview">

@@ -27,5 +27,14 @@ describe('localization', () => {
       expect(Object.keys(topic.choices).sort()).toEqual(['connect', 'create', 'learn']);
       expect(copy.remainingColors(2)).toContain('2');
     }
+
+    const japaneseTopic = copyForLocale('ja').topics['open-campus-activities-001'];
+    expect(copyForLocale('ja').walkingTitle).toBe('あなたの色を持って、他のBubbleWalkと出会おう。');
+    expect(japaneseTopic.title).toBe('大学で、力をいれて取りくみたいことは？');
+    expect(japaneseTopic.choices).toEqual({
+      learn: '教養や技術を学ぶ',
+      create: 'ゲームや絵をつくる',
+      connect: '友達とつながる',
+    });
   });
 });

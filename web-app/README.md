@@ -17,9 +17,10 @@ The interface supports English, Japanese, Simplified Chinese, and Korean. Use
 the expandable language menu in the header to switch languages; the selection
 is remembered in the browser.
 
-The open-campus topic asks what visitors would like to do at university:
-learn, create, or connect. The circular picker blends those three meanings;
-the selected mix is sent to NanoH2 as the existing triangle coordinates.
+The open-campus topic asks what visitors would like to focus on at university:
+making games or art, connecting with friends, or learning knowledge and skills.
+The circular picker blends those three meanings; the selected mix is sent to
+NanoH2 as the existing triangle coordinates.
 
 ## Development
 
