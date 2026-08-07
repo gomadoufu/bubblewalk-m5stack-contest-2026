@@ -116,3 +116,7 @@ for hands-on demonstration.
 
 The M5Stack Global Innovation Contest 2026 Hackster project page and demo video
 will be linked here after publication.
+
+## License
+
+This project is available under the [MIT License](LICENSE).

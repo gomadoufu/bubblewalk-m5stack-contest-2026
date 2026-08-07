@@ -110,3 +110,7 @@ Web App 홈 화면에 두 가지 기기 조작이 모두 있어 진행자는 iPa
 
 M5Stack Global Innovation Contest 2026 Hackster 프로젝트 페이지와 시연 영상은
 공개 후 이곳에 연결할 예정입니다.
+
+## 라이선스
+
+이 프로젝트는 [MIT License](LICENSE)로 배포됩니다.

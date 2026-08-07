@@ -111,3 +111,7 @@ Web Appのホーム画面には両方のデバイス操作があり、進行役�
 
 M5Stack Global Innovation Contest 2026のHacksterプロジェクトページとデモ動画は、
 公開後にここへ掲載します。
+
+## ライセンス
+
+このプロジェクトは[MIT License](LICENSE)で公開しています。

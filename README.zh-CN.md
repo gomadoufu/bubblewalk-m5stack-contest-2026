@@ -101,3 +101,7 @@ Web App首页同时提供两项设备操作，因此演示人员可以用一台i
 
 M5Stack Global Innovation Contest 2026的Hackster项目页面和演示视频将在发布后
 链接到这里。
+
+## 许可证
+
+本项目采用[MIT License](LICENSE)发布。
