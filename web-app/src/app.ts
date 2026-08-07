@@ -109,7 +109,7 @@ export class ShowcaseApp {
   private renderLanguageSwitcher(): string {
     const copy = this.copy;
     const options = SUPPORTED_LOCALES.map((locale) => {
-      const label = copyForLocale(locale).languageName;
+      const label = copy.languageOptions[locale];
       return `<button type="button" data-locale="${locale}" lang="${locale}" aria-pressed="${locale === this.locale}">${escapeHtml(label)}</button>`;
     }).join('');
     return `

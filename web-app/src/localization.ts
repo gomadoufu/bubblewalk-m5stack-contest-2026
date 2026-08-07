@@ -12,6 +12,7 @@ type TopicCopy = {
 
 export type UiCopy = {
   languageName: string;
+  languageOptions: Record<Locale, string>;
   languageMenuLabel: string;
   pageTitle: string;
   pageDescription: string;
@@ -103,12 +104,13 @@ const topic = (
 const COPIES: Record<Locale, UiCopy> = {
   en: {
     languageName: 'English',
+    languageOptions: { en: 'English', ja: 'Japanese', 'zh-CN': 'Simplified Chinese', ko: 'Korean' },
     languageMenuLabel: 'Choose language',
     pageTitle: 'BubbleWalk — Wear your color',
     pageDescription: 'Choose a color, carry it with BubbleWalk, and reveal the spectrum you meet.',
     homeAria: 'BubbleWalk home',
     heroLineOne: 'Wear your color.',
-    heroLineTwo: 'Meet a spectrum.',
+    heroLineTwo: 'Meet people with different ideas.',
     heroCopy: 'Turn what you want to try at university into a color, light up a pocket-sized device, and meet the colors around you.',
     pickQuestion: 'Today’s question',
     you: 'You',
@@ -178,6 +180,7 @@ const COPIES: Record<Locale, UiCopy> = {
   },
   ja: {
     languageName: '日本語', languageMenuLabel: '言語を選ぶ',
+    languageOptions: { en: '英語', ja: '日本語', 'zh-CN': '簡体字中国語', ko: '韓国語' },
     pageTitle: 'BubbleWalk — 色をまとって歩こう',
     pageDescription: '自分の色をBubbleWalkにのせて、出会った色のスペクトラムを見てみよう。',
     homeAria: 'BubbleWalk ホーム', heroLineOne: '色をまとって。', heroLineTwo: 'いろんな考えの人に出会おう。',
@@ -231,8 +234,9 @@ const COPIES: Record<Locale, UiCopy> = {
   },
   'zh-CN': {
     languageName: '中文', languageMenuLabel: '选择语言',
+    languageOptions: { en: '英语', ja: '日语', 'zh-CN': '简体中文', ko: '韩语' },
     pageTitle: 'BubbleWalk — 带上你的颜色', pageDescription: '把你的颜色带进BubbleWalk，看看一路遇见的光谱。',
-    homeAria: 'BubbleWalk 首页', heroLineOne: '带上你的颜色。', heroLineTwo: '遇见一片光谱。',
+    homeAria: 'BubbleWalk 首页', heroLineOne: '带上你的颜色。', heroLineTwo: '去遇见想法各异的人吧。',
     heroCopy: '把你想在大学尝试的事情化作颜色，点亮掌心大小的设备，与周围的色彩相遇。',
     pickQuestion: '今天的问题',
     you: '你', trianglePrompt: '你在这个色轮的哪个位置？', wheelHint: '点击或拖动。中心会混合三种颜色。',
@@ -270,8 +274,9 @@ const COPIES: Record<Locale, UiCopy> = {
   },
   ko: {
     languageName: '한국어', languageMenuLabel: '언어 선택',
+    languageOptions: { en: '영어', ja: '일본어', 'zh-CN': '중국어', ko: '한국어' },
     pageTitle: 'BubbleWalk — 나의 색을 지니고 걸어요', pageDescription: '나의 색을 BubbleWalk에 담고, 걸으며 만난 색의 스펙트럼을 확인해 보세요.',
-    homeAria: 'BubbleWalk 홈', heroLineOne: '나의 색을 지니고.', heroLineTwo: '스펙트럼을 만나요.',
+    homeAria: 'BubbleWalk 홈', heroLineOne: '나의 색을 지니고.', heroLineTwo: '다양한 생각을 가진 사람들을 만나요.',
     heroCopy: '대학에서 해 보고 싶은 일을 색으로 만들고, 손바닥만 한 기기를 밝혀 보세요. 주변의 색과 만나게 됩니다.',
     pickQuestion: '오늘의 질문',
     you: '나', trianglePrompt: '컬러 휠에서 나는 어디쯤일까요?', wheelHint: '탭하거나 드래그하세요. 가운데에서는 세 색이 섞여요.',
