@@ -35,6 +35,19 @@ constexpr const char *kDigitPatterns[7] = {
     "111001010010010", // 7
 };
 
+// The compact 3 x 5 glyph is too sparse for 4 once the NeoHEX is viewed
+// through the showcase diffuser. Use the full seven-row display so the
+// crossbar and the descending right stroke remain visually connected.
+constexpr uint8_t kDigitFourPixels[] = {
+    2,
+    5, 7,
+    10, 13,
+    16, 17, 18, 19, 20,
+    26,
+    31,
+    35,
+};
+
 constexpr uint8_t kNearRingPixels[NeohexDisplay::kNearRingCount] = {
     11, 12, 17, 19, 24, 25,
 };
@@ -482,6 +495,13 @@ void NeohexDisplay::showDeviceNumber(uint8_t number, RgbColor color,
   if (number < 1 || number > 7) return;
   pixels_.clear();
   pixels_.setBrightness(brightness);
+  if (number == 4) {
+    for (uint8_t pixel : kDigitFourPixels) {
+      pixels_.setPixelColor(pixel, pixels_.Color(color.r, color.g, color.b));
+    }
+    pixels_.show();
+    return;
+  }
   const char *pattern = kDigitPatterns[number - 1];
   for (uint8_t i = 0; i < 15; i++) {
     if (pattern[i] != '1') continue;
